@@ -53,7 +53,7 @@ def run(_):
 
 
 def main():
-    optlist, args = getopt.getopt(sys.argv[1:], 'c:p:r:t')
+    optlist, args = getopt.getopt(sys.argv[1:], 'c:d:rp:t')
     optdict = dict(optlist)
 
     if '-t' in optdict:
@@ -67,19 +67,28 @@ def main():
 
     initlog('INFO')
 
-    if '-r' in optdict:
-        with open(optdict.get('-r', 'dump.dat'), 'rb') as fi:
+    if '-d' in optdict:
+        with open(optdict.get('-d', 'dump.dat'), 'rb') as fi:
             r = pickle.load(fi)
     else:
         r = robot.Robot(klondike.Klondike())
 
-    pause = optdict.get('-p')
-    if pause:
-        pause = float(pause)
-    if not r.run(True, pause):
+    r.fork_status()
+    k = r.step_backs.pop(-1)
+
+    if not r.run():
         r.k.print_prespective()
-        with open('dump.dat', 'wb') as fo:
+        with open(optdict.get('-d', 'dump.dat'), 'wb') as fo:
             pickle.dump(r, fo)
+        return
+
+    if '-r' in optdict:
+        pause = optdict.get('-p', '0.05')
+        if pause:
+            pause = float(pause)
+        k.replay(r.k.moves, pause)
+        logging.warning('win, score %d, step %d.', k.score, k.step)
+        logging.warning('resolve: ' + '; '.join(r.k.moves))
 
 
 if __name__ == '__main__':

@@ -7,8 +7,9 @@ This program is written by Python, fit for both Python2 and Python3. Run under n
 # Usage
 
 * -c for loop (under proformance test).
+* -d for read core dump.
+* -r for replay.
 * -p for change pause time. (default is 0.05s)
-* -r for read core dump.
 * -t for proformance test.
 
 # Copyright

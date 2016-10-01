@@ -9,7 +9,6 @@
 from __future__ import absolute_import, division,\
     print_function, unicode_literals
 import copy
-import time
 import logging
 import klondike
 
@@ -83,7 +82,7 @@ class Robot(object):
         for c in klondike.COLORS:
             if not self.k.foundation[c]:
                 continue
-            card = self.k.foundation[c][-1]
+            card = self.k.foundation[c]
             card = card[0] + str(int(card[1:])+1)
 
             f, p = self.find_card(card)
@@ -125,7 +124,7 @@ class Robot(object):
         self.k = self.step_backs.pop(-1)
         return True
 
-    def run(self, print_status=False, pause=0.05):
+    def run(self):
         while not self.k.is_end():
             h = self.k.hash()
             if h in self.cached:
@@ -138,10 +137,6 @@ class Robot(object):
                     return False
             self.cached.append(h)
 
-            if print_status:
-                if pause:
-                    time.sleep(pause)
-                self.k.print_stat()
             if self.deal_piles():
                 continue
             if self.merge_piles():

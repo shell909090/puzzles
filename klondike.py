@@ -8,6 +8,7 @@
 '''
 from __future__ import absolute_import, division,\
     print_function, unicode_literals
+import time
 import random
 import hashlib
 import logging
@@ -46,7 +47,7 @@ def map_color(card):
         'S': '32'}
     code_map = ('A', '2', '3', '4', '5', '6', '7',
                 '8', '9', '10', 'J', 'Q', 'K')
-    if card[0] not in color_map:
+    if not card or card[0] not in color_map:
         return card
     code = color_map[card[0]]
     return '\x1B[%sm%s\x1B[39;49m' % (code, code_map[int(card[1:])-1])
@@ -61,9 +62,10 @@ def md5(s):
 class Klondike(object):
 
     def __init__(self):
+        self.moves = []
         self.knowns = [[] for i in range(7)]
         self.unknowns = [[] for i in range(7)]
-        self.foundation = {c: [] for c in COLORS}
+        self.foundation = {c: None for c in COLORS}
         self.waste = []
         self.waste_show = []
         self.waste_prior = []
@@ -80,6 +82,24 @@ class Klondike(object):
             move_card(self.knowns[i], self.waste)
         logging.info('initial')
 
+    def replay(self, moves, pause=0.05):
+        for m in moves:
+            if pause:
+                time.sleep(pause)
+            self.print_stat()
+            if m == 't':
+                self.tune_card()
+            elif m[0] == 'f':
+                self.pile_to_foundation(int(m[1:]))
+            elif m[0] == 'd':
+                self.waste_to_foundation()
+            elif m[0] == 'w':
+                self.waste_to_pile(int(m[1:]))
+            elif m[0] == 'p':
+                self.pile_to_pile(*(int(i) for i in m[1:].split(',')))
+            elif m[0] == 'u':
+                self.partial_pile_to_pile(*(int(i) for i in m[1:].split(',')))
+
     def line_to_row(self, lines):
         for p in range(100):
             row = []
@@ -91,7 +111,7 @@ class Klondike(object):
 
     def print_stat(self):
         foundation = '\t'.join([
-            map_color(top_of_pile(self.foundation[c])) for c in COLORS])
+            map_color(self.foundation[c] or 'N') for c in COLORS])
         print('\x1B[2J\x1B[;H')
         print('N\t{}\t\t{}'.format(
             map_color(top_of_pile(self.waste_show)), foundation))
@@ -106,7 +126,7 @@ class Klondike(object):
     def print_prespective(self):
         print(','.join(self.waste))
         print(','.join(self.waste_show))
-        print('\t'.join([top_of_pile(self.foundation[c]) for c in COLORS]))
+        print('\t'.join([self.foundation[c] or 'N' for c in COLORS]))
         print('')
         for row in self.line_to_row(self.unknowns):
             print('\t'.join(row))
@@ -117,7 +137,7 @@ class Klondike(object):
     def hash(self):
         s = [','.join(self.waste), ]
         s.append(','.join(self.waste_show))
-        s.append(','.join([top_of_pile(self.foundation[c]) for c in COLORS]))
+        s.append(','.join([self.foundation[c] or 'N' for c in COLORS]))
         for i in range(7):
             s.append(','.join(self.knowns[i]))
             s.append(','.join(self.unknowns[i]))
@@ -127,13 +147,14 @@ class Klondike(object):
         for c in COLORS:
             if not self.foundation[c]:
                 return False
-            card = self.foundation[c][-1]
+            card = self.foundation[c]
             if int(card[1:]) != 13:
                 return False
         return True
 
     def tune_card(self):
         logging.info('tune card')
+        self.moves.append('t')
         if not self.waste:
             self.waste = list(reversed(self.waste_show))
             self.waste_show = []
@@ -179,10 +200,10 @@ class Klondike(object):
         C = card[0]
         if not self.foundation[C]:
             return int(card[1:]) == 1
-        return int(card[1:]) == int(self.foundation[C][-1][1:]) + 1
+        return int(card[1:]) == int(self.foundation[C][1:]) + 1
 
     def to_foundation(self, card):
-        self.foundation[card[0]].append(card)
+        self.foundation[card[0]] = card
 
     def pile_to_foundation(self, n):
         if not self.knowns[n]\
@@ -193,6 +214,7 @@ class Klondike(object):
         logging.info('%s from pile %s to foundation', card, n)
         self.score += 10
         self.step += 1
+        self.moves.append('f%d' % n)
 
     def waste_to_foundation(self):
         if not self.waste_show\
@@ -203,6 +225,7 @@ class Klondike(object):
         logging.info('%s from waste to foundation', card)
         self.score += 10
         self.step += 1
+        self.moves.append('d')
 
     def waste_to_pile(self, n):
         if not self.waste_show\
@@ -213,6 +236,7 @@ class Klondike(object):
         logging.info('%s from waste to pile %d', card, n)
         self.score += 5
         self.step += 1
+        self.moves.append('w%d' % n)
 
     def check_pile_to_pile(self, t, f):
         return self.knowns[f] and self.check_to_pile(self.knowns[f][0], t)
@@ -226,6 +250,7 @@ class Klondike(object):
         logging.info('pile %d merge into pile %d', f, t)
         self.tune_over(f)
         self.step += 1
+        self.moves.append('p%d,%d' % (t, f))
 
     def partial_pile_to_pile(self, t, f, p):
         if not self.check_to_pile(self.knowns[f][p], t):
@@ -236,3 +261,4 @@ class Klondike(object):
         logging.info('partial %s from pile %d to pile %d',
                      ','.join(movable), f, t)
         self.step += 1
+        self.moves.append('u%d,%d,%d' % (t, f, p))

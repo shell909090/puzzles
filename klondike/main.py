@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 '''
 @date: 2016-10-01
@@ -6,8 +6,6 @@
 @copyright: 2016, Shell.Xu <shell909090@gmail.com>
 @license: BSD-3-clause
 '''
-from __future__ import absolute_import, division,\
-    print_function, unicode_literals
 import sys
 import pickle
 import getopt
@@ -15,12 +13,8 @@ import logging
 import klondike
 import robot
 
-if sys.version_info.major == 3:
-    basestring = str
 
-
-LOGFMT = '%(asctime)s.%(msecs)03d[%(levelname)s]\
-(%(module)s:%(lineno)d): %(message)s'
+LOGFMT = '%(asctime)s.%(msecs)03d[%(levelname)s](%(module)s:%(lineno)d): %(message)s'
 
 
 def initlog(lv, logfile=None, stream=None, longdate=False):
@@ -40,7 +34,7 @@ def initlog(lv, logfile=None, stream=None, longdate=False):
     handler.setFormatter(logging.Formatter(LOGFMT, datefmt))
 
     logger = logging.getLogger()
-    if isinstance(lv, basestring):
+    if isinstance(lv, str):
         lv = getattr(logging, lv)
 
     logger.setLevel(lv)

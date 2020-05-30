@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 '''
 @date: 2019-05-06
@@ -6,8 +6,6 @@
 @copyright: 2019, Shell.Xu <shell909090@gmail.com>
 @license: BSD-3-clause
 '''
-from __future__ import absolute_import, division,\
-    print_function, unicode_literals
 import time
 import pprint
 import random
